@@ -61,6 +61,12 @@ public:
     static const int N_Y=11; // Number of y values
     static const int N_Z=11; // Number of z values
     double qij[N_X][N_Y][N_Z][Npix][Npix]; //array for data
+
+    static const int N_Summation = 500; //Number of summations
+    double alpha_array[N_Summation]; //Array for making alpha values in advance
+    double alpha_array_2[N_Summation]; //Array for alpha divided by two
+    //This should be slightly faster since it does not have to calculate the same values repeatedly
+    
     /*
     11 x 11 x 11 x 5 x 5: 5-dimensional array
     33275 rows with 6 entries
@@ -141,6 +147,14 @@ Z0(z0)  //Z Coordinate
       << "," << "Z X-Ray Coordinate" << "," << "X Pixel Index"
       << "," <<  "Y Pixel Index" << "," << "Charge Fraction" << "\n";
     cout << "Beginning Calculation " << endl;
+
+    for (int i_sum = 0; i_sum < N_Summation; i_sum++) { //Calculating all alpha values used in summation
+        alpha_array[i_sum] = (i_sum + 0.5) * pii;
+        alpha_array_2[i_sum] = alpha_array[i_sum] * .5;
+    }
+
+
+
     for (int xp=0; xp<Npix; xp++) {  //Iterating over the x pixels
         b_i=(xp-Npix/2.)*PIX_WDTH; //Defining Left border of pixel
         b_i1=b_i+PIX_WDTH; //Defining Right border of pixel
@@ -153,7 +167,11 @@ Z0(z0)  //Z Coordinate
                     Y0=y_ray*(PIX_WDTH/2.)/(N_Y-1);  //Calculating y position of x-ray
                     
 
-                    Z0 = 0; //Z0 = 0 is a special case for the z-axis (Avoids cumbersome if statement)
+                    Z0 = 0; //Z0 = 0 is a special case for the z-axis (Avoids cumbersome if statement in z loop)
+
+                    if (xp == Xc && yp == Yc) {
+                        qij[x_ray][y_ray][0][xp][yp] = 1.0; //Pixel takes all charge
+                    }
                     qij[x_ray][y_ray][0][xp][yp] = 0.0;
                     //The equation goes to zero because
                     //z_ray, which is z0 in the paper, is an argument in a sine (see Eq. 11)
@@ -195,7 +213,6 @@ Z0(z0)  //Z Coordinate
 
 double Qint::Tint(int n)
 {
-    alpha_n=(n + 0.5)*pi2;  //here it is alpha_n/2.
     double Integral_Value=0.; //Initializing the variable representing the integral result
     double Square_Root_X_Value = 0; //Initialize value of log(x)
                                     //[aka log(eta)] that will be computed many times
@@ -203,10 +220,10 @@ double Qint::Tint(int n)
         double x, y, erx, ery;
         x= (0.5 + i)/Nint; //eta in the formula (Eq. 10)
         Square_Root_X_Value = 1/sqrt(-log(x));
-        erx  =erf(alpha_n*(b_i1-X0)*Square_Root_X_Value); //error function for x in integral
-        erx -=erf(alpha_n*(b_i-X0)*Square_Root_X_Value); //error function for x in integral
-        ery  =erf(alpha_n*(c_j1-Y0)*Square_Root_X_Value); //error function for y in integral
-        ery -=erf(alpha_n*(c_j-Y0)*Square_Root_X_Value); //error function for y in integral
+        erx  =erf(alpha_array_2[n] *(b_i1-X0)*Square_Root_X_Value); //error function for x in integral
+        erx -=erf(alpha_array_2[n] *(b_i-X0)*Square_Root_X_Value); //error function for x in integral
+        ery  =erf(alpha_array_2[n] *(c_j1-Y0)*Square_Root_X_Value); //error function for y in integral
+        ery -=erf(alpha_array_2[n] *(c_j-Y0)*Square_Root_X_Value); //error function for y in integral
         y =erx*ery; //The value for the smaller component of the integral
         Integral_Value +=y; // adding each partition of integral
         //vx.push_back(x);
@@ -385,9 +402,6 @@ double Qint::Qj(void)   //double x0, double y0, double z0)
     double I_ij_n=0.0; //Variable to store integral value for each index of sum (I_ij)
     double term=0.0;  //term is just each sum term, multiplication of the integral and the sine
 
-
-    const int N=500; //Number of summations
-
     //double sum=0.0;
 /*    for (int i_sum=0; i_sum<N; i_sum++){
         alpha_n=(i_sum+0.5)*pii;
@@ -402,20 +416,25 @@ double Qint::Qj(void)   //double x0, double y0, double z0)
      }
  */
     double Sum_Value = 0.0;  //Sum
-    bool lstop=FALSE;  //Variable that tells the summation to stop if the integral is less than valid
-    int Nprd=(int)(2./Z0); //Period of the sine oscillation
-    int Nsum=0; //Index to keep track of number of iterations of summation
-    for (int i_sum=0; i_sum<N; i_sum++){
-        Nsum++; //Index
-        alpha_n=(i_sum+0.5)*pii; //Compute alpha_n
-        Sine=sin(alpha_n*Z0)/alpha_n;  //Compute sine value
+    //bool lstop=FALSE;  //Variable that tells the summation to stop if the integral is less than valid
+    int Nprd=(int)(2./Z0); //Number of turns in a period
+    //int Nsum=0; //Index to keep track of number of iterations of summation (Not used elsewhere so commenting out)
+    for (int i_sum=0; i_sum< N_Summation; i_sum++){
+        //Nsum++; //Index (Not used elsewhere so commenting out)
+        //alpha_n=(i_sum+0.5)*pii; //Compute alpha_n
+        Sine=sin(alpha_array[i_sum]*Z0)/alpha_array[i_sum];  //Compute sine value
         I_ij_n=Tint(i_sum); //Compute integral
         if (in_pixel) {I_ij_n= 1.-I_ij_n;}
         term=Sine*I_ij_n; //Multiplying the terms in the summation
         Sum_Value+=term; //Adding the term to the summation
         //cout<<"i="<<i_sum<<"alpha_n="<<alpha_n<<"Sine="<<Sine<<"I_ij_n="<<I_ij_n<<"term="<<term<<endl;
-        if (I_ij_n<Valid) {lstop=TRUE;}  // break;} //If the integral is less than the cutoff, prepare to stop summation
-        if ( ( (i_sum+1)%Nprd == 0) && lstop ) {break;}
+          // break;} //If the integral is less than the cutoff, prepare to stop summation
+        //if ( ( (i_sum+1)%Nprd == 0)) { //Calculate sum for one period of sine function
+        if ((Nprd / (i_sum + .5) ) > 1.0) {
+            if (I_ij_n < Valid) { break;}
+        } 
+        //Variable that tells summation to stop if integral is less than valid
+        //This is useful because sine function is initially small and integral is small. 
      }
     Sum_Value = 2 * Sum_Value; //Doubling it as it says in the equation
     if (in_pixel) {Sum_Value =1.-Sum_Value;}
