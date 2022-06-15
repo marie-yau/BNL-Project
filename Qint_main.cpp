@@ -188,7 +188,7 @@ Z0(z0)  //Z Coordinate
                     
                     for (int z_ray=1; z_ray<N_Z; z_ray++) { //Iterating over number of z positions for x-ray 
                         //except 0 as that was delt with earlier
-                        Z0=z_ray/(N_Z-1); //Calculating z position of x-ray
+                        Z0=z_ray/(N_Z-1.0); //Calculating z position of x-ray
                         //Note: These coordiantes are divided by the height (h in the paper)
                         //of the free field region, in the paper it is 8um
                         //This is why Z0 is not scaled by anything and X0 and Y0 are scaled by PIX_WIDTH/2.
