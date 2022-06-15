@@ -140,6 +140,12 @@ Z0(z0)  //Z Coordinate
     // coordinates of the pixel that is in the center of the grid
     int Xc = Npix/2; //Equals 2, which is the index for the central pixel row
     int Yc = Npix/2; //Equals 2, which is the index for the central pixel column
+    double q; //Initializing q
+    int x_ray;
+    int y_ray;
+    int z_ray;
+    int xp;
+    int yp;
 
     // cvs file for the lookup table
     std::ofstream qint_output("qint_output.csv");
@@ -155,16 +161,16 @@ Z0(z0)  //Z Coordinate
 
 
 
-    for (int xp=0; xp<Npix; xp++) {  //Iterating over the x pixels
+    for (xp=0; xp<Npix; xp++) {  //Iterating over the x pixels
         b_i=(xp-Npix/2.)*PIX_WDTH; //Defining Left border of pixel
         b_i1=b_i+PIX_WDTH; //Defining Right border of pixel
-        for (int yp=0; yp<Npix; yp++) { //Iterating over the y pixels
+        for (yp=0; yp<Npix; yp++) { //Iterating over the y pixels
             c_j=(yp-Npix/2.)*PIX_WDTH; //Defining Upper border of pixel
             c_j1=c_j+PIX_WDTH; //Defining Lower border of pixel
-            for (int x_ray=0; x_ray<N_X; x_ray++) { //Iterating over number of x positions for x-ray
-                X0=x_ray*(PIX_WDTH/2.)/(N_X-1); //Calculating x position of x-ray
-                for (int y_ray=0; y_ray<N_Y; y_ray++) { //Iterating over number of y positions for x-ray
-                    Y0=y_ray*(PIX_WDTH/2.)/(N_Y-1);  //Calculating y position of x-ray
+            for (x_ray=0; x_ray<N_X; x_ray++) { //Iterating over number of x positions for x-ray
+                X0=x_ray*(PIX_WDTH/2.)/(N_X-1.0); //Calculating x position of x-ray
+                for (y_ray=0; y_ray<N_Y; y_ray++) { //Iterating over number of y positions for x-ray
+                    Y0=y_ray*(PIX_WDTH/2.)/(N_Y-1.0);  //Calculating y position of x-ray
                     
 
                     Z0 = 0; //Z0 = 0 is a special case for the z-axis (Avoids cumbersome if statement in z loop)
@@ -180,13 +186,8 @@ Z0(z0)  //Z Coordinate
                     if (xp == Xc && yp == Yc) {
                         qij[x_ray][y_ray][0][xp][yp] = 1.0; //Pixel takes all charge
                     }
-                    double q = qij[x_ray][y_ray][0][xp][yp]; //Writing for the z = 0 case
-                    qint_output << x_ray << "," << y_ray
-                        << "," << 0 << "," << xp
-                        << "," << yp << "," << q << "\n";
-
                     
-                    for (int z_ray=1; z_ray<N_Z; z_ray++) { //Iterating over number of z positions for x-ray 
+                    for (z_ray=1; z_ray<N_Z; z_ray++) { //Iterating over number of z positions for x-ray 
                         //except 0 as that was delt with earlier
                         Z0=z_ray/(N_Z-1.0); //Calculating z position of x-ray
                         //Note: These coordiantes are divided by the height (h in the paper)
@@ -195,10 +196,7 @@ Z0(z0)  //Z Coordinate
                         //Divided by 2. due to the symmetry in the center
                         qij[x_ray][y_ray][z_ray][xp][yp]=Qj();
                         
-                        double q = qij[x_ray][y_ray][z_ray][xp][yp];
-                        qint_output << x_ray << "," << y_ray
-                          << "," << z_ray << "," << xp
-                          << "," << yp << "," << q << "\n";
+
                     }
                 }
             }
@@ -206,6 +204,53 @@ Z0(z0)  //Z Coordinate
         double Percent = 100.0*(1.0*xp+1)/(1.0*Npix);
         cout << Percent << " Percent Completed" << endl;
     }
+
+    //Handling Special Cases on the border and the corner where Z0 is zero
+    z_ray = 0;
+    
+    //Right Border
+    x_ray = 10;
+    for (y_ray = 0; y_ray < N_Y; y_ray++) { //Iterating over number of y positions for x-ray
+        qij[x_ray][y_ray][z_ray][Xc][Yc] = .5; //Center pixel
+        qij[x_ray][y_ray][z_ray][Xc + 1][Yc] = .5; //Pixel to the right of center
+        }
+    
+    //Top Border
+    y_ray = 10;
+    for (x_ray = 0; x_ray < N_X; x_ray++) { //Iterating over number of y positions for x-ray
+        qij[x_ray][y_ray][z_ray][Xc][Yc] = .5; //Center pixel
+        qij[x_ray][y_ray][z_ray][Xc][Yc + 1] = .5; //Pixel above center
+        }
+
+    //Corner case
+    x_ray = 10;
+    y_ray = 10;
+    qij[x_ray][y_ray][z_ray][Xc][Yc] = .25; //Center
+    qij[x_ray][y_ray][z_ray][Xc+1][Yc] = .25; //Right
+    qij[x_ray][y_ray][z_ray][Xc][Yc+1] = .25; //Top
+    qij[x_ray][y_ray][z_ray][Xc+1][Yc+1] = .25; //Diagonal
+
+
+    //Writing to file loop
+    for (xp = 0; xp < Npix; xp++) {  //Iterating over the x pixels
+        for (yp = 0; yp < Npix; yp++) { //Iterating over the y pixels
+            for (x_ray = 0; x_ray < N_X; x_ray++) { //Iterating over number of x positions for x-ray
+                for (y_ray = 0; y_ray < N_Y; y_ray++) { //Iterating over number of y positions for x-ray
+                    for (z_ray = 0; z_ray < N_Z; z_ray++) { //Iterating over number of z positions for x-ray 
+
+                        //Writing to file
+                        q = qij[x_ray][y_ray][z_ray][xp][yp];
+                        qint_output << x_ray << "," << y_ray
+                            << "," << z_ray << "," << xp
+                            << "," << yp << "," << q << "\n";
+                    }
+                }
+            }
+        }
+    }
+
+
+
     qint_output.close();
 
     return;
