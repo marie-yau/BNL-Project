@@ -56,13 +56,13 @@ public:
   static const double PIX_WDTH; //Width of the pixel
 
     int Nint;  // number of integrations
-    static const int Npix=5; // Number of pixels
+    static const int Npix=5; // Number of pixels (5 Normally)
     static const int N_X=11; // Number of x values // can make lower to reduce computation time?
     static const int N_Y=11; // Number of y values
     static const int N_Z=11; // Number of z values
     double qij[N_X][N_Y][N_Z][Npix][Npix]; //array for data
 
-    static const int N_Summation = 500; //Number of summations
+    static const int N_Summation = 500; //Number of summations (Original 500)
     double alpha_array[N_Summation]; //Array for making alpha values in advance
     double alpha_array_2[N_Summation]; //Array for alpha divided by two
     //This should be slightly faster since it does not have to calculate the same values repeatedly
@@ -107,7 +107,7 @@ const double Qint::pi2(pii/2.);  //=TMath::Pi()/2.;
 const double Qint::pi4(pii/4.);  //=TMath::Pi()/4.;
 const double Qint::s0=0.01;
 const double Qint::PIX_WDTH=2.0; //Width of the pixel
-const double Qint::Valid=0.0005;
+const double Qint::Valid= .0005; //VALID really .0005 (originally)
 
 const int Qint::NgX=60;
 const int Qint::NgY=20;
@@ -118,7 +118,7 @@ X0(x0), //X Coordinate
 Y0(y0), //Y Coordinate
 Z0(z0)  //Z Coordinate
 {
-    Nint=200.;
+    Nint=200.; //Number for integrals (original 200)
     b_i1= 1.0;
     b_i=-1.0;
     c_j1= 1.0;
@@ -141,11 +141,11 @@ Z0(z0)  //Z Coordinate
     int Xc = Npix/2; //Equals 2, which is the index for the central pixel row
     int Yc = Npix/2; //Equals 2, which is the index for the central pixel column
     double q; //Initializing q
-    int x_ray;
-    int y_ray;
-    int z_ray;
-    int xp;
-    int yp;
+    int x_ray; //x coord iterator
+    int y_ray; //y coord iterator
+    int z_ray; //z coord iterator
+    int xp; //x pixel iterator
+    int yp; //y pixel iterator
 
     // cvs file for the lookup table
     std::ofstream qint_output("qint_output.csv");
@@ -252,6 +252,11 @@ Z0(z0)  //Z Coordinate
 
 
     qint_output.close();
+
+
+    X0 = x0;
+    Y0 = y0;
+    Z0 = z0;
 
     return;
 }
@@ -462,7 +467,7 @@ double Qint::Qj(void)   //double x0, double y0, double z0)
  */
     double Sum_Value = 0.0;  //Sum
     //bool lstop=FALSE;  //Variable that tells the summation to stop if the integral is less than valid
-    int Nprd=(int)(2./Z0); //Number of turns in a period
+    double Nprd=(2./Z0); //Number of turns in a period
     //int Nsum=0; //Index to keep track of number of iterations of summation (Not used elsewhere so commenting out)
     for (int i_sum=0; i_sum< N_Summation; i_sum++){
         //Nsum++; //Index (Not used elsewhere so commenting out)
@@ -475,7 +480,7 @@ double Qint::Qj(void)   //double x0, double y0, double z0)
         //cout<<"i="<<i_sum<<"alpha_n="<<alpha_n<<"Sine="<<Sine<<"I_ij_n="<<I_ij_n<<"term="<<term<<endl;
           // break;} //If the integral is less than the cutoff, prepare to stop summation
         //if ( ( (i_sum+1)%Nprd == 0)) { //Calculate sum for one period of sine function
-        if ((Nprd / (i_sum + .5) ) > 1.0) {
+        if ((Nprd) > 1.0 * (i_sum + .5)) {
             if (I_ij_n < Valid) { break;}
         } 
         //Variable that tells summation to stop if integral is less than valid
@@ -598,7 +603,7 @@ int Qint_main ( double xx, double yy, double zz)
 */
     auto end = std::chrono::steady_clock::now(); //End Clock
     double elapsed_time = double(std::chrono::duration_cast <std::chrono::nanoseconds>(end - start).count()); //Subtract Time
-    cout << "Elapsed Time (s)" << elapsed_time / 1e9 << endl; //Printing Time
+    cout << "Elapsed Time (s): " << elapsed_time / 1e9 << endl; //Printing Time
     return 0;
 }
 
