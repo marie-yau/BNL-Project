@@ -56,7 +56,7 @@ public:
   static const double PIX_WDTH; //Width of the pixel
 
     int Nint;  // number of integrations
-    static const int Npix=5; // Number of pixels (5 Normally)
+    static const int Npix=7; // Number of pixels (5 Normally)
     static const int N_X=11; // Number of x values // can make lower to reduce computation time?
     static const int N_Y=11; // Number of y values
     static const int N_Z=11; // Number of z values
@@ -134,7 +134,7 @@ Z0(z0)  //Z Coordinate
 
     //Another histogram graph
     sprintf(title, "Profile");
-    hProf = new TH2D(title,title, 5, 0., 5., 5, 0., 5.);
+    hProf = new TH2D(title,title,Npix*1.0, 0., Npix * 1.0, Npix, 0., Npix * 1.0);
     hProf->SetStats(0);
 
     // coordinates of the pixel that is in the center of the grid
