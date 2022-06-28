@@ -56,7 +56,7 @@ public:
   static const double PIX_WDTH; //Width of the pixel
 
     int Nint;  // number of integrations
-    static const int Npix=7; // Number of pixels (5 Normally)
+    static const int Npix=5; // Number of pixels (5 Normally)
     static const int N_X=11; // Number of x values // can make lower to reduce computation time?
     static const int N_Y=11; // Number of y values
     static const int N_Z=11; // Number of z values
