@@ -55,7 +55,12 @@ public:
   double b_i, b_i1, c_j, c_j1;
   static const double PIX_WDTH; //Width of the pixel
 
-    int Nint;  // number of integrations
+    static const int Nint_Static = 200;  // number of integrations
+    int Nint; //
+    double eta; //eta in the formula (Eq. 10)
+    double Square_Root_X_Value[Nint_Static]; //Square root of log array because they are repeated calculations
+
+
     static const int Npix=5; // Number of pixels (5 Normally)
     static const int N_X=11; // Number of x values // can make lower to reduce computation time?
     static const int N_Y=11; // Number of y values
@@ -159,6 +164,11 @@ Z0(z0)  //Z Coordinate
         alpha_array_2[i_sum] = alpha_array[i_sum] * .5;
     }
 
+    for (int i = 0; i < Nint_Static; i++)
+    {
+        eta = (0.5 + i) / Nint_Static; //eta in the formula (Eq. 10)
+        Square_Root_X_Value[i] = 1 / sqrt(-log(eta));
+    }
 
 
     for (xp=0; xp<Npix; xp++) {  //Iterating over the x pixels
@@ -264,16 +274,13 @@ Z0(z0)  //Z Coordinate
 double Qint::Tint(int n)
 {
     double Integral_Value=0.; //Initializing the variable representing the integral result
-    double Square_Root_X_Value = 0; //Initialize value of log(x)
-                                    //[aka log(eta)] that will be computed many times
-    for (int i=0; i<Nint; i++) {
-        double x, y, erx, ery;
-        x= (0.5 + i)/Nint; //eta in the formula (Eq. 10)
-        Square_Root_X_Value = 1/sqrt(-log(x));
-        erx  =erf(alpha_array_2[n] *(b_i1-X0)*Square_Root_X_Value); //error function for x in integral
-        erx -=erf(alpha_array_2[n] *(b_i-X0)*Square_Root_X_Value); //error function for x in integral
-        ery  =erf(alpha_array_2[n] *(c_j1-Y0)*Square_Root_X_Value); //error function for y in integral
-        ery -=erf(alpha_array_2[n] *(c_j-Y0)*Square_Root_X_Value); //error function for y in integral
+
+    for (int i=0; i< Nint_Static; i++) {
+        double y, erx, ery;
+        erx  =erf(alpha_array_2[n] *(b_i1-X0)*Square_Root_X_Value[i]); //error function for x in integral
+        erx -=erf(alpha_array_2[n] *(b_i-X0)*Square_Root_X_Value[i]); //error function for x in integral
+        ery  =erf(alpha_array_2[n] *(c_j1-Y0)*Square_Root_X_Value[i]); //error function for y in integral
+        ery -=erf(alpha_array_2[n] *(c_j-Y0)*Square_Root_X_Value[i]); //error function for y in integral
         y =erx*ery; //The value for the smaller component of the integral
         Integral_Value +=y; // adding each partition of integral
         //vx.push_back(x);
