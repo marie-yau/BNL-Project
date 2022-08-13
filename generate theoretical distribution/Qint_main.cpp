@@ -1,10 +1,3 @@
-//
-//  Tintegral.cpp
-//
-//
-//  Created by Ivan on 9/12/21.
-//  Comments and minor corrections made by Marie and Matthew
-//
 #ifndef __CINT__
 
 #include <stdio.h>
